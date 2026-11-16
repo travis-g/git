@@ -32,4 +32,16 @@ done
 # Ensure repo home tree is owned by git.
 chown -R git:git /home/git
 
+# sshd does not pass its own environment to user sessions, so translate the
+# auto-create knobs into sshd SetEnv directives. Use a single SetEnv line:
+# on this OpenSSH build only one SetEnv directive survives config parsing.
+setenv_args=
+[ -n "${GIT_AUTO_CREATE_MIN_DEPTH:-}" ] && setenv_args="$setenv_args GIT_AUTO_CREATE_MIN_DEPTH=$GIT_AUTO_CREATE_MIN_DEPTH"
+[ -n "${GIT_AUTO_CREATE_MAX_DEPTH:-}" ] && setenv_args="$setenv_args GIT_AUTO_CREATE_MAX_DEPTH=$GIT_AUTO_CREATE_MAX_DEPTH"
+[ -n "${GIT_SHELL:-}" ] && setenv_args="$setenv_args GIT_SHELL=$GIT_SHELL"
+if [ -n "$setenv_args" ]; then
+    sed -i '/^SetEnv /d' /etc/ssh/sshd_config
+    echo "SetEnv$setenv_args" >> /etc/ssh/sshd_config
+fi
+
 exec /usr/sbin/sshd -D -e

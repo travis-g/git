@@ -1,0 +1,78 @@
+#!/bin/sh
+# Copyright 2026 Travis Grammer
+# SPDX-License-Identifier: Apache-2.0
+#
+# Login shell for the git user. Creates a bare repository on first push
+# (git-receive-pack) when the target path is missing, then delegates to
+# git-shell. Fetch/clone and every other command pass through unchanged.
+
+set -euf
+
+# Delegate shell
+shell_cmd="/usr/bin/git-shell"
+
+# sshd invokes this login shell as: <this-script> -c "<command>".
+# Read the command from the -c argument, matching how git-shell itself
+# receives it; SSH_ORIGINAL_COMMAND is not reliably set on every sshd build.
+if [ "$1" != "-c" ]; then
+    exec "$shell_cmd" "$@"
+fi
+cmd=${2:-}
+
+# Split the command the same way git-shell does; only receive-pack creates.
+set -- $cmd
+[ "${1:-}" = "git-receive-pack" ] || exec "$shell_cmd" -c "$cmd"
+[ "$#" -eq 2 ] || exec "$shell_cmd" -c "$cmd"
+path=$2
+
+# Strip a surrounding quote pair ('...' or "..."), if present.
+case "$path" in
+    \'*\' | \"*\") path=${path#?}; path=${path%?} ;;
+esac
+
+# Jail: relative .git path, no traversal, no empty components.
+case "$path" in
+    *.git) ;;
+    *) exec "$shell_cmd" -c "$cmd" ;;
+esac
+case "$path" in
+    '' | /* | *..*) exec "$shell_cmd" -c "$cmd" ;;
+esac
+case "/$path/" in
+    *//*) exec "$shell_cmd" -c "$cmd" ;;
+esac
+
+# Depth = number of /-separated components, including <repo>.git.
+old_ifs=$IFS
+IFS=/
+set -- $path
+IFS=$old_ifs
+depth=$#
+
+min=${GIT_AUTO_CREATE_MIN_DEPTH:-2}
+max=${GIT_AUTO_CREATE_MAX_DEPTH:-2}
+if [ "$depth" -lt "$min" ] || [ "$depth" -gt "$max" ]; then
+    echo "fatal: auto-create: path depth $depth outside allowed range [$min-$max]: $path" >&2
+    exit 1
+fi
+
+target=/home/git/$path
+parent=${target%/*}
+
+# Never clobber an existing path; let git report the real error.
+[ -e "$target" ] && exec "$shell_cmd" -c "$cmd"
+
+mkdir -p "$parent"
+# Re-check after mkdir in case a concurrent push created it first.
+[ -e "$target" ] && exec "$shell_cmd" -c "$cmd"
+
+# --quiet keeps "Initialized empty Git repository..." off stdout; git's
+# protocol channel is stdout, so any extra output there corrupts the push.
+if /usr/bin/git init --bare --quiet "$target"; then
+    echo "auto-create: $path depth=$depth" >&2
+else
+    echo "fatal: auto-create: git init --bare failed for $path" >&2
+    exit 1
+fi
+
+exec "$shell_cmd" -c "$cmd"

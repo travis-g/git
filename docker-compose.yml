@@ -8,6 +8,13 @@ services:
       - git-data:/home/git
       - ./authorized_keys:/home/git/.ssh/authorized_keys:ro
     restart: unless-stopped
+    # Uncomment to change auto-create depth limits (default 2..2 = <user>/<repo>.git)
+    # or to swap the delegated shell (default /usr/bin/git-shell). These are
+    # passed to ssh sessions via sshd SetEnv (see entrypoint.sh).
+    # environment:
+    #   GIT_AUTO_CREATE_MIN_DEPTH: 2
+    #   GIT_AUTO_CREATE_MAX_DEPTH: 2
+    #   GIT_SHELL: /usr/bin/git-shell
 
 volumes:
   git-data:
