@@ -12,9 +12,7 @@ RUN apk add --no-cache openssh-server && \
     chmod 700 /home/git/.ssh
 
 COPY sshd_config /etc/ssh/sshd_config
-COPY entrypoint.sh /entrypoint.sh
-
-RUN chmod +x /entrypoint.sh
+COPY --chmod=755 entrypoint.sh /entrypoint.sh
 
 EXPOSE 22
 
