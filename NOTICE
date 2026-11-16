@@ -1,0 +1,6 @@
+docker-git-remote
+Copyright 2026 Travis Grammer
+
+This product includes software from the alpine/git Docker image
+(https://hub.docker.com/r/alpine/git), licensed under the
+Apache License, Version 2.0.

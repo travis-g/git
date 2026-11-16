@@ -1,0 +1,13 @@
+services:
+  git-remote:
+    build: .
+    container_name: git-remote
+    ports:
+      - "2222:22"
+    volumes:
+      - git-data:/home/git
+      - ./authorized_keys:/home/git/.ssh/authorized_keys:ro
+    restart: unless-stopped
+
+volumes:
+  git-data:

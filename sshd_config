@@ -1,0 +1,16 @@
+Port 22
+ListenAddress 0.0.0.0
+HostKey /home/git/.ssh/ssh_host_rsa_key
+HostKey /home/git/.ssh/ssh_host_ecdsa_key
+HostKey /home/git/.ssh/ssh_host_ed25519_key
+
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+ChallengeResponseAuthentication no
+UsePAM yes
+
+AllowUsers git
+
+X11Forwarding no
+PrintMotd no
