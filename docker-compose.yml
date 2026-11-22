@@ -1,5 +1,6 @@
 services:
   git-remote:
+    image: ghcr.io/travis-g/git:latest
     build: .
     container_name: git-remote
     ports:

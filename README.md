@@ -2,13 +2,39 @@
 
 A minimal, headless SSH git remote container based on [`alpine/git`][docker-alpine-git], helpful for self-hosting repositories.
 
+Published to [GHCR][ghcr] as [`ghcr.io/travis-g/git`][ghcr-pkg] for `linux/amd64` and `linux/arm64`.
+
+| Tag          | Meaning                                     |
+| ------------ | ------------------------------------------- |
+| `latest`     | Latest commit on `main`                     |
+| `1.2.3`      | Exact release (from tag `v1.2.3`)           |
+| `1.2` / `1`  | Rolling major/minor of the latest release   |
+| `sha-<short>`| Exact commit                                |
+
 ## Setup
 
 1. Add your public key to `authorized_keys` next to `docker-compose.yml`.
-2. Start the container:
+2. Start the container — pull the published image:
+
+   ```sh
+   docker compose pull
+   docker compose up -d
+   ```
+
+   or build it yourself:
 
    ```sh
    docker compose up -d --build
+   ```
+
+   Without compose:
+
+   ```sh
+   docker run -d --name git-remote \
+     -p 2222:22 \
+     -v git-data:/home/git \
+     -v "$PWD/authorized_keys":/home/git/.ssh/authorized_keys:ro \
+     ghcr.io/travis-g/git:latest
    ```
 
 3. On the client, use the remote. The first push creates the repository:
@@ -20,6 +46,12 @@ A minimal, headless SSH git remote container based on [`alpine/git`][docker-alpi
    ```
 
    Pushing creates the bare repository (`git init --bare`) automatically: no `docker exec` needed.
+
+   `ssh://`-style URLs work too (handy when the host port is not 22, as in the compose example above):
+
+   ```sh
+   git remote add origin ssh://git@<host>:2222/<user>/<repo>.git
+   ```
 
 ## Notes
 
@@ -36,3 +68,5 @@ A minimal, headless SSH git remote container based on [`alpine/git`][docker-alpi
 Licensed under Apache-2.0; built on [`alpine/git`][docker-alpine-git], also Apache-2.0. See `LICENSE` and `NOTICE`.
 
 [docker-alpine-git]: https://hub.docker.com/r/alpine/git
+[ghcr]: https://ghcr.io
+[ghcr-pkg]: https://github.com/travis-g/git/pkgs/container/git

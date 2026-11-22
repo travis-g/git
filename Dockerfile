@@ -1,7 +1,17 @@
 # Copyright 2026 Travis Grammer
 # SPDX-License-Identifier: Apache-2.0
-ARG ALPINE_GIT_TAG=latest
+ARG ALPINE_GIT_TAG=v2.54.1
 FROM alpine/git:${ALPINE_GIT_TAG}
+
+ARG VERSION=dev
+ARG REVISION=unknown
+
+LABEL org.opencontainers.image.title="docker-git-remote" \
+      org.opencontainers.image.description="Minimal, headless SSH git remote container" \
+      org.opencontainers.image.source="https://github.com/travis-g/git" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}"
 
 RUN apk add --no-cache openssh-server && \
     mkdir -p /var/run/sshd && \
