@@ -9,6 +9,10 @@ PasswordAuthentication no
 PubkeyAuthentication yes
 ChallengeResponseAuthentication no
 UsePAM yes
+# The user's authorized_keys is a read-only bind mount owned by the host
+# user (see docker-compose.yml), not by the git account, so sshd's default
+# strict ownership/mode check would reject every key.
+StrictModes no
 
 AllowUsers git
 

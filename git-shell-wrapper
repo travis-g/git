@@ -4,7 +4,9 @@
 #
 # Login shell for the git user. Creates a bare repository on first push
 # (git-receive-pack) when the target path is missing, then delegates to
-# git-shell. Fetch/clone and every other command pass through unchanged.
+# git-shell. ssh://-style absolute paths are normalized to relative ones
+# (git-shell rejects absolute paths); fetch/clone and other commands pass
+# through otherwise unchanged.
 
 set -euf
 
@@ -19,9 +21,10 @@ if [ "$1" != "-c" ]; then
 fi
 cmd=${2:-}
 
-# Split the command the same way git-shell does; only receive-pack creates.
+# Split the command the same way git-shell does; only the two-token
+# "<command> '<path>'" form is normalized, and only receive-pack creates.
 set -- $cmd
-[ "${1:-}" = "git-receive-pack" ] || exec "$shell_cmd" -c "$cmd"
+cmd_name=${1:-}
 [ "$#" -eq 2 ] || exec "$shell_cmd" -c "$cmd"
 path=$2
 
@@ -29,6 +32,19 @@ path=$2
 case "$path" in
     \'*\' | \"*\") path=${path#?}; path=${path%?} ;;
 esac
+
+# git sends ssh://-style URLs as an absolute path ('/user/repo.git'), which
+# git-shell itself rejects. Normalize a single leading slash and pass the
+# normalized command through; anything still absolute is caught by the jail
+# below (receive-pack) or left for git-shell to refuse.
+case "$path" in
+    /*)
+        path=${path#/}
+        cmd="$cmd_name '$path'"
+        ;;
+esac
+
+[ "$cmd_name" = "git-receive-pack" ] || exec "$shell_cmd" -c "$cmd"
 
 # Jail: relative .git path, no traversal, no empty components.
 case "$path" in

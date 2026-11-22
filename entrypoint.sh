@@ -8,12 +8,14 @@ mkdir -p /home/git/.ssh
 chmod 700 /home/git/.ssh
 chown git:git /home/git/.ssh
 
-# Create authorized_keys if missing.
+# Create authorized_keys if missing. When it exists it may be a read-only
+# bind mount (see docker-compose.yml), so only touch/chmod/chown the file we
+# create ourselves.
 if [ ! -f /home/git/.ssh/authorized_keys ]; then
     touch /home/git/.ssh/authorized_keys
+    chmod 600 /home/git/.ssh/authorized_keys
+    chown git:git /home/git/.ssh/authorized_keys
 fi
-chmod 600 /home/git/.ssh/authorized_keys
-chown git:git /home/git/.ssh/authorized_keys
 
 # Generate host keys if they do not exist.
 for key_type in rsa ecdsa ed25519; do
@@ -29,8 +31,9 @@ for key_type in rsa ecdsa ed25519; do
     chmod 600 "$key_file"
 done
 
-# Ensure repo home tree is owned by git.
-chown -R git:git /home/git
+# Ensure repo home tree is owned by git. Best effort: authorized_keys may be
+# a read-only bind mount whose ownership cannot be changed.
+chown -R git:git /home/git || true
 
 # sshd does not pass its own environment to user sessions, so translate the
 # auto-create knobs into sshd SetEnv directives. Use a single SetEnv line:
